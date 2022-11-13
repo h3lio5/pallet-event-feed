@@ -15,11 +15,6 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-// mod traits;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
 /// Define the Event Data type
 #[derive(Clone, Encode, Decode, TypeInfo)]
 pub struct EventInfo {
