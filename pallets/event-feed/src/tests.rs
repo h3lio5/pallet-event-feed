@@ -30,65 +30,60 @@ fn unauthorized_oracle_does_not_work() {
 }
 
 #[test]
-fn older_event_date_removed() {
+fn event_data_removed_after_an_hour() {
 	new_test_ext().execute_with(|| {
 		let data = "moshimoshi".as_bytes().to_vec();
 		assert_ok!(EventFeedModule::add_new_event_data(
 			RawOrigin::Signed(KAMISAMA).into(),
 			data.clone()
 		));
-		// Check if the event data is being included in the chain storage
+		// Check if the event data was posted to the chain
 		let data_from_chain =
 			EventFeedData::<Test>::get().back().unwrap().as_ref().unwrap().data.clone();
 		assert_eq!(data, data_from_chain);
 		// Move 5 minutes forward, 5 * 60 * 1000 millisecs
-		// pallet_timestamp::Now::<Test>::mutate(|val| val.saturating_add(5 * 60 * 1000));
 		pallet_timestamp::Now::<Test>::mutate(|val| *val += 5 * 60 * 1000);
-		// NOTE: For the purposes of this test, manually call the on_finalize() hook for the
+		// NOTE: For the purposes of this test, we manually call the on_finalize() hook of the
 		// EventFeedModule
 		// NOTE: We do not need to call the hooks for Timestamp module as we are directly updating
 		// the timestamp value to simulate our desired conditions
-		// EventFeedModule::on_finalize(10); // The blocknumber doesn't matter for our purposes here
+		EventFeedModule::on_finalize(10); // The blocknumber doesn't matter for our purposes here
 
-		// add a new event
-		let new_data = "gm fam!".as_bytes().to_vec();
+		// post a new event
+		let new_data = "sob sob... screw that mfer sbf".as_bytes().to_vec();
 		assert_ok!(EventFeedModule::add_new_event_data(
 			RawOrigin::Signed(KAMISAMA).into(),
 			new_data.clone()
 		));
-		// Check if the new event data is being included in the chain storage
+		// Check if the new event data was being posted
 		let new_data_from_chain =
 			EventFeedData::<Test>::get().back().unwrap().as_ref().unwrap().data.clone();
 		assert_eq!(new_data, new_data_from_chain);
 
 		EventFeedModule::on_finalize(10); // Trigger the on_finalize() hook
 
-		// Check if the front of the VecDeque is the older event data ("moshimoshi")
+		// Check if the front of the Event Feed VecDeque points to the older event ("moshimoshi")
 		let front_event_feed_data =
 			EventFeedData::<Test>::get().front().unwrap().as_ref().unwrap().data.clone();
 		assert_eq!(front_event_feed_data, data);
-		// Now 56 minutes forward, 56 * 60 * 1000 millisecs
+		// Move 56 minutes forward so that the first event is purged, 56 * 60 * 1000 millisecs
 		pallet_timestamp::Now::<Test>::mutate(|val| *val += 56 * 60 * 1000);
-		// NOTE: For the purposes of this test, manually call the on_finalize() hook for the
-		// EventFeedModule
-		// NOTE: We do not need to call the hooks for Timestamp module as we are directly updating
-		// the timestamp value to simulate our desired conditions
 		EventFeedModule::on_finalize(10); // The blocknumber doesn't matter for our purposes here
 
-		// Check if the event data ("moshimoshi") still exists in storage or is cleaned away as
-		// intended
+		// Check if the first event got purged away as it doesn't fall in our 1 hour window anymore
 		let newer_front_event_feed_data =
 			EventFeedData::<Test>::get().front().unwrap().as_ref().unwrap().data.clone();
 
 		// Ideally, the older event feed data should have gotten purged
 		assert_ne!(data, newer_front_event_feed_data);
-		// It should be equal to the
+		// It should be equal to the second event posted
 		assert_eq!(newer_front_event_feed_data, new_data);
 
-		// Move 5 minutes forward adn check if the one remaining event has been cleared or not
+		// Move 5 minutes forward and check if the one remaining event has been cleared or not
 		pallet_timestamp::Now::<Test>::mutate(|val| *val += 5 * 60 * 1000);
 		EventFeedModule::on_finalize(10);
 
+		// There should not be any events left
 		let total_event_feed_items = EventFeedData::<Test>::get().len();
 		assert_eq!(total_event_feed_items, 0);
 	});
