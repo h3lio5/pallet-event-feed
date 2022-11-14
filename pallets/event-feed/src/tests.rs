@@ -6,12 +6,20 @@ use frame_system::RawOrigin;
 #[test]
 fn authorized_oracle_event_insertion_works() {
 	new_test_ext().execute_with(|| {
-		// Dispatch a signed extrinsic.
+		// The test checks if the authorized oracle account is able to post event data onchain as
+		// intended.
 		let data = "moshimoshi".as_bytes().to_vec();
 		assert!(pallet::EventFeedData::<Test>::get().len() == 0);
-		assert_ok!(EventFeedModule::add_new_event_data(RawOrigin::Signed(KAMISAMA).into(), data));
+		assert_ok!(EventFeedModule::add_new_event_data(
+			RawOrigin::Signed(KAMISAMA).into(),
+			data.clone()
+		));
 		// Read pallet storage and assert an expected result.
+		let data_from_chain =
+			EventFeedData::<Test>::get().back().unwrap().as_ref().unwrap().data.clone();
+
 		assert!(pallet::EventFeedData::<Test>::get().len() > 0);
+		assert_eq!(data, data_from_chain);
 	});
 }
 
@@ -19,8 +27,8 @@ fn authorized_oracle_event_insertion_works() {
 #[test]
 fn unauthorized_oracle_does_not_work() {
 	new_test_ext().execute_with(|| {
-		// Ensure the expected error is thrown when no value is present.
-		// Dispatch a signed extrinsic.
+		// The test checks if the extrinsic panics when an unauthorized account tries to post event
+		// data on-chain as intended.
 		const SPAMMER: AccountId = AccountId::new([0u8; 32]);
 		let data = "moshimoshi".as_bytes().to_vec();
 		assert_ok!(EventFeedModule::add_new_event_data(RawOrigin::Signed(SPAMMER).into(), data));
