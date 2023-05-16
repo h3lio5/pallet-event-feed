@@ -1,4 +1,8 @@
-# Substrate Node Template
+# TimeCapsule Event Feed
+
+TimeCapsule is a substrate pallet for a time-sensitive event feed, enabling an authorized oracle to post event data of arbitrary length. The pallet retains the event feed for only the last one hour, automatically purging older data at each block. To run the individual event feed pallet, go to the [directory](https://github.com/h3lio5/pallet-event-feed/tree/main/pallets/event-feed).
+
+The project is based on the substrate-node-template and below are the instructions to setup a substrate development environment and run the node.
 
 [![Try on playground](https://img.shields.io/badge/Playground-Node_Template-brightgreen?logo=Parity%20Substrate)](https://docs.substrate.io/playground/) [![Matrix](https://img.shields.io/matrix/substrate-technical:matrix.org)](https://matrix.to/#/#substrate-technical:matrix.org)
 
